@@ -28,9 +28,9 @@ from urllib.parse import quote
 
 import pydantic
 import mistralai.workflows as workflows
+from mistralai.client.models import DocumentURLChunk
 from mistralai.workflows.plugins.mistralai import (
     ChatCompletionRequest,
-    DocumentURLChunk,
     OCRRequest,
     UserMessage,
     chat_parse_to_model,
