@@ -471,7 +471,17 @@ class FacturenTbProcessWorkflow:
                         ),
                         factuur_nummer=extracted.factuur_nummer,
                         bedrag_ex=extracted.bedrag_ex,
-                        btw=extracted.btw,
+                        btw=str(
+                            round(
+                                float(extracted.bedrag_in or 0)
+                                - float(extracted.bedrag_ex or 0),
+                                2,
+                            )
+                        )
+                        if not extracted.btw
+                        and extracted.bedrag_in
+                        and extracted.bedrag_ex
+                        else extracted.btw,
                         bedrag_in=extracted.bedrag_in,
                     )
                     if not row.datum:
