@@ -495,6 +495,8 @@ class FacturenTbProcessWorkflow:
                         )
                         if m:
                             number = m.group(1)
+                    if not row.factuur_nummer and number:
+                        row.factuur_nummer = number
                     if not number:
                         digest = hashlib.md5(base64.b64decode(pdf_b64)).hexdigest()[:6]
                         number = f"ref-{digest}"
