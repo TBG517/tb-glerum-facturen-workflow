@@ -456,6 +456,8 @@ class FacturenTbProcessWorkflow:
             err_before = len(result.errors)
             for att_id, att_name in zip(mail.attachment_ids, mail.attachment_names):
                 ext = os.path.splitext(att_name)[1] or ".pdf"
+                if "factuurbijlage" in att_name.lower():
+                    continue
                 try:
                     _, pdf_b64 = await download_attachment(token, mail.message_id, att_id)
                     extracted = await extract_invoice(
