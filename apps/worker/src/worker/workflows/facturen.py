@@ -279,7 +279,7 @@ async def extract_invoice(
     pdf_b64: str, subject: str, sender_name: str, received: str
 ) -> ExtractedInvoice:
     """Leest een factuur-PDF uit met OCR en structureren."""
-       ocr = await mistralai_ocr(
+    ocr = await mistralai_ocr(
         OCRRequest(
             model="mistral-ocr-latest",
             document=DocumentURLChunk(
