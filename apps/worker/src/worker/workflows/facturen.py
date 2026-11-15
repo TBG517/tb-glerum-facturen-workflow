@@ -509,5 +509,8 @@ class FacturenTbProcessWorkflow:
 
         if not data.dry_run and len(result.errors) == err_before:
                 await mark_mail_processed(token, mail.message_id)
+
         if not data.dry_run and result.rows_added:
+            await append_excel_rows(token, result.rows_added)
+
         return result
