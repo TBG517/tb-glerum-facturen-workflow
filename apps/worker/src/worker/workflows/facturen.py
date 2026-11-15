@@ -280,8 +280,12 @@ async def extract_invoice(
 ) -> ExtractedInvoice:
     """Leest een factuur-PDF uit met OCR en structureren."""
     client = get_mistral_client()
-    upload = client.files.upload(
-        file={"file": io.BytesIO(base64.b64decode(pdf_b64)), "file_name": "factuur.pdf"},
+      upload = client.files.upload(
+        file={
+            "file_name": "factuur.pdf",
+            "content": io.BytesIO(base64.b64decode(pdf_b64)),
+            "content_type": "application/pdf",
+        },
         purpose="ocr",
     )
     signed = client.files.get_signed_url(file_id=upload.id)
