@@ -19,6 +19,7 @@ binnen activities gelezen.
 """
 
 import base64
+import hashlib
 import io
 import os
 import re
@@ -410,12 +411,13 @@ def _fmt_date(iso_like: str, fallback: str) -> str:
     return ""
 
 
-def _filename(row: InvoiceRow, ext: str) -> str:
+def _filename(row: InvoiceRow, ext: str, number: str = "") -> str:
     """Bouwt 'JJMMDD Naam fact. nummer.ext'."""
     dd = row.datum[:2]
     mm = row.datum[3:5]
     yy = row.datum[-2:]
-    number = row.factuur_nummer or "onbekend"
+    if not number:
+        number = row.factuur_nummer or "onbekend"
     safe_name = re.sub(r"[\\/:*?\"<>|]", "", row.naam).strip() or "Onbekend"
     return f"{yy}{mm}{dd} {safe_name} fact. {number}{ext}"
 
@@ -456,7 +458,11 @@ class FacturenTbProcessWorkflow:
                     )
                     if not row.datum:
                         row.datum = _fmt_date(mail.received, "")
-                    filename = _filename(row, ext)
+                    number = row.factuur_nummer
+                    if not number:
+                        digest = hashlib.md5(base64.b64decode(pdf_b64)).hexdigest()[:6]
+                        number = f"ref-{digest}"
+                    filename = _filename(row, ext, number)
 
                     if await file_exists(token, DEST_FOLDER, filename):
                         result.skipped.append(filename)
