@@ -507,8 +507,8 @@ class FacturenTbProcessWorkflow:
                 except Exception as exc:  # noqa: BLE001 - per bijlage isoleren
                     result.errors.append(f"{att_name}: {exc}")
 
-        if not data.dry_run and len(result.errors) == err_before:
-                await mark_mail_processed(token, mail.message_id)
+            if not data.dry_run and len(result.errors) == err_before:
+                    await mark_mail_processed(token, mail.message_id)
 
         if not data.dry_run and result.rows_added:
             await append_excel_rows(token, result.rows_added)
