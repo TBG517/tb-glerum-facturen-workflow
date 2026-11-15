@@ -216,6 +216,7 @@ async def list_new_mails(token: str, days_back: int, max_mails: int) -> list[Mai
         url: str | None = (
             f"{GRAPH}/users/{MAILBOX}/mailFolders/{folder_id}/messages"
             f"?$filter=receivedDateTime ge {since_iso}"
+            f" and not(categories/any(c:c eq 'VerwerktMistral'))"
             f"&$top={max_mails}&$orderby=receivedDateTime asc"
         )
         while url and len(mails) < max_mails:
@@ -308,7 +309,23 @@ async def extract_invoice(
     )
     return await chat_parse_to_model(ExtractedInvoice, request)
 
-
+@workflows.activity(name="facturen-mark-processed", retry_policy_max_attempts=3)
+async def mark_mail_processed(token: str, message_id: str) -> None:
+    """Markeert een mail als verwerkt met een Outlook-categorie."""
+    client = await _http()
+    try:
+        resp = await client.patch(
+            f"{GRAPH}/users/{MAILBOX}/messages/{message_id}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json={"categories": ["VerwerktMistral"]},
+        )
+        if resp.status_code not in (200, 201):
+            raise GraphError("mark_processed_failed", resp.status_code)
+    finally:
+        await client.aclose()
 @workflows.activity(name="facturen-file-exists", retry_policy_max_attempts=3)
 async def file_exists(token: str, folder_path: str, filename: str) -> bool:
     """Controleert of het doelbestand al bestaat (verwerking is dan al gebeurd)."""
@@ -436,6 +453,7 @@ class FacturenTbProcessWorkflow:
         result.mails_seen = len(mails)
 
         for mail in mails:
+            err_before = len(result.errors)
             for att_id, att_name in zip(mail.attachment_ids, mail.attachment_names):
                 ext = os.path.splitext(att_name)[1] or ".pdf"
                 try:
@@ -489,7 +507,7 @@ class FacturenTbProcessWorkflow:
                 except Exception as exc:  # noqa: BLE001 - per bijlage isoleren
                     result.errors.append(f"{att_name}: {exc}")
 
+        if not data.dry_run and len(result.errors) == err_before:
+                await mark_mail_processed(token, mail.message_id)
         if not data.dry_run and result.rows_added:
-            await append_excel_rows(token, result.rows_added)
-
         return result
