@@ -279,20 +279,12 @@ async def extract_invoice(
     pdf_b64: str, subject: str, sender_name: str, received: str
 ) -> ExtractedInvoice:
     """Leest een factuur-PDF uit met OCR en structureren."""
-    client = get_mistral_client()
-    upload = client.files.upload(
-        file={
-            "file_name": "factuur.pdf",
-            "content": io.BytesIO(base64.b64decode(pdf_b64)),
-            "content_type": "application/pdf",
-        },
-        purpose="ocr",
-    )
-    signed = client.files.get_signed_url(file_id=upload.id)
-    ocr = await mistralai_ocr(
+       ocr = await mistralai_ocr(
         OCRRequest(
             model="mistral-ocr-latest",
-            document=DocumentURLChunk(document_url=signed.url),
+            document=DocumentURLChunk(
+                document_url="data:application/pdf;base64," + pdf_b64
+            ),
         )
     )
     text = "\n".join(page.markdown for page in ocr.pages)
