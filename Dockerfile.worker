@@ -12,13 +12,9 @@ ENV UV_PYTHON_PREFERENCE=only-system \
     UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_COMPILE_BYTECODE_TIMEOUT=900
-COPY pyproject.toml ./
-COPY tools/uv.sh tools/
+COPY . .
 RUN --mount=type=secret,id=registry_token --mount=type=cache,target=/root/.cache/uv \
     bash tools/uv.sh lock
-RUN --mount=type=secret,id=registry_token --mount=type=cache,target=/root/.cache/uv \
-    bash tools/uv.sh sync --all-packages --frozen --no-dev --no-install-local
-COPY . .
 RUN --mount=type=secret,id=registry_token --mount=type=cache,target=/root/.cache/uv \
     bash tools/uv.sh sync --all-packages --frozen --no-dev
 
