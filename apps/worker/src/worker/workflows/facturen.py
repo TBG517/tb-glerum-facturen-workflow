@@ -95,7 +95,7 @@ class InvoiceRow(pydantic.BaseModel):
 
     def excel_row(self) -> list[str]:
         return [
-            self.datum,
+            "-".join(reversed(self.datum.split("-"))) if self.datum else "",
             self.naam,
             self.categorie,
             self.factuur_nummer,
@@ -294,7 +294,7 @@ async def extract_invoice(
         "Hieronder staat de OCR-tekst van een factuur en de metadata van de e-mail "
         "waarmee hij binnenkwam. Vul de velden; ontbrekende waarden leeg laten, "
         "nooit verzinnen. Bedragen als getal met een punt als decimaalteken.\n"
-        f"- naam: korte leveranciersnaam voor een overzicht (bijv. 'MoveMove', 'IKEA', 'KPN')\n"
+        f"- naam: korte leveranciersnaam, het bedrijf uit de factuur (bijv. 'Volvo Cappendijk', 'IKEA'), nooit een persoonnaam of e-mailadres\n"
         "- factuur_nummer: het factuurnummer op de factuur\n"
         "- factuurdatum: als 'DD-MM-JJJJ' (zoniet bekend: leeg)\n"
         "- bedrag_ex, btw, bedrag_in: bedragen\n"
@@ -459,6 +459,14 @@ class FacturenTbProcessWorkflow:
                     if not row.datum:
                         row.datum = _fmt_date(mail.received, "")
                     number = row.factuur_nummer
+                    if not number:
+                        m = re.search(
+                            r"(?:factuur|bestelling|order)\s*#?\s*([0-9]{5,})",
+                            mail.subject,
+                            re.IGNORECASE,
+                        )
+                        if m:
+                            number = m.group(1)
                     if not number:
                         digest = hashlib.md5(base64.b64decode(pdf_b64)).hexdigest()[:6]
                         number = f"ref-{digest}"
