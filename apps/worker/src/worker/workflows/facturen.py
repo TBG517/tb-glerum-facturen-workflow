@@ -194,15 +194,22 @@ async def list_new_mails(token: str, days_back: int, max_mails: int) -> list[Mai
     client = await _http()
     headers = {"Authorization": f"Bearer {token}"}
     try:
-        folders = await client.get(
+        folder_id = ""
+        for base in (
             f"{GRAPH}/users/{MAILBOX}/mailFolders",
-            params={"$filter": "displayName eq '" + MAIL_FOLDER + "'"},
-            headers=headers,
-        )
-        items = folders.json().get("value", []) if folders.status_code == 200 else []
-        if not items:
+            f"{GRAPH}/users/{MAILBOX}/mailFolders/inbox/childFolders",
+        ):
+            folders = await client.get(
+                base,
+                params={"$filter": "displayName eq '" + MAIL_FOLDER + "'"},
+                headers=headers,
+            )
+            items = folders.json().get("value", []) if folders.status_code == 200 else []
+            if items:
+                folder_id = items[0]["id"]
+                break
+        if not folder_id:
             raise GraphError("mail_folder_not_found", 404)
-        folder_id = items[0]["id"]
 
         mails: list[MailSummary] = []
         url: str | None = (
